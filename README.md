@@ -1,8 +1,8 @@
-# if680
-IF680 - Processamento Gráfico
+# IF680 - Processamento Gráfico
+Repositório do projeto da disciplina de IF680 - Processamento Gráfico.
 
 
-###### funções importantes
+## Funções importantes
 Operação | Função |
 -|-|
 Produto vetorial | cross(vetor1, vetor2) |
