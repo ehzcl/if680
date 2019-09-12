@@ -45,17 +45,22 @@ public:
         axisZ = from - at;
         axisZ.make_unit_vector();
 
-        axisY = (dot(up, axisZ) / dot(axisZ, axisZ)) * axisZ;
+        axisY = axisZ - ((dot(axisZ,up)/dot(up,up))*up);
         axisY.make_unit_vector();
 
         axisX = cross(axisY, axisZ);
         axisX.make_unit_vector();
 
-        /* FALTANDO TERMINAR 
+        float i = 1;
         
-        matrizCamToWorld = matrix44();
-        
-        */
+        camToWorld = matrix44(
+            axisX.x(), axisX.y(), axisX.z(), 0,
+            axisY.x(), axisY.y(), axisY.z(), 0,
+            axisZ.x(), axisZ.y(), axisZ.z(), 0,
+            from.x(), from.y(), from.z(), 1
+        );
+
+        worldToCamera = camToWorld.inverse();
     }
 
     bool compute_pixel_coordinates(const vec3 &pWorld, vec2 &pRaster)
