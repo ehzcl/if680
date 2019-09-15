@@ -19,7 +19,7 @@ class camera
 {
 public:
     int imgWidth, imgHeight;
-    float fov, _near;
+    float fov, _near, _far;
     float bottom, left, top, right;
     matrix44 camToWorld;
     matrix44 worldToCamera;
@@ -30,9 +30,9 @@ public:
 public:
     camera();
     camera(const vec3 &from, const vec3 &at, const vec3 &up,
-           const float &f, const float &n,
+           const float &f, const float &n, const float &far,
            const int &iwidth, const int &iheight) : fov(f), _near(n), imgWidth(iwidth), imgHeight(iheight),
-                                                    _from(from), _at(at), _up(up)
+                                                    _from(from), _at(at), _up(up), _far(far)
     {
         look_at(from, at, up);
     }
@@ -45,7 +45,7 @@ public:
         axisZ = from - at;
         axisZ.make_unit_vector();
 
-        axisY = axisZ - ((dot(axisZ,up)/dot(up,up))*up);
+        axisY = up - ((dot(up,axisZ)/dot(axisZ,axisZ))*axisZ);
         axisY.make_unit_vector();
 
         axisX = cross(axisY, axisZ);
@@ -65,7 +65,39 @@ public:
 
     bool compute_pixel_coordinates(const vec3 &pWorld, vec2 &pRaster)
     {
-        return false; // Retornar verdadeiro se o ponto pode ser visto
+        vec3 screen, projPerspectiva, pJanela;
+
+        worldToCamera.mult_point_matrix(pWorld,screen);
+
+        projPerspectiva = vec3(
+                                screen.x()*(_near/screen.z()),
+                                screen.y()*(_near/screen.z()),
+                                _near);
+
+        matrix44 applicationWindowMatrix = matrix44(
+            (2*_near)/(right-left), 0,0,0,
+            0,(2*_near)/(bottom-top),0,0,
+            -(right+left)/(right-left), -(bottom+top)/(bottom-top),(_far+_near)/(_far-_near),1,
+            0,0,-(2*_near)/(_far-_near),0
+        );
+        
+        applicationWindowMatrix.mult_point_matrix(projPerspectiva,pJanela); // normalizando o ponto para mapear para janela da aplicação
+
+        float aspect_ratio = (float)imgWidth/(float)imgHeight;
+        top = tan((fov/2)*(M_PI/180.0));
+        right = top*aspect_ratio;
+        left = -right;
+        bottom = -top;
+
+        pRaster = vec2(
+                        (1+pJanela.x())/2*imgWidth,
+                        (1-pJanela.y())/2*imgHeight
+        );
+        
+        if(pJanela.x() >= left && pJanela.x() <= right && pJanela.y() >= bottom && pJanela.y() <= top){
+            return true;    // o ponto pode ser visto
+        }
+        return false; // o ponto não pode ser visto
     }
 
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)

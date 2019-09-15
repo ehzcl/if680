@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 			ImGui::CreateContext();
 			ImGuiSDL::Initialize(renderer, WIDTH, HEIGHT);
 
-            camera cam(vec3(0, 0, 5), vec3(0, 0, -1), vec3(0, 1, 0), 90.0f, 1.f, WIDTH, HEIGHT);
+            camera cam(vec3(0, 0, 5), vec3(0, 0, -1), vec3(0, 1, 0), 90.0f, 1.f, 50.0f, WIDTH, HEIGHT);
 
 			float my_color[4];
 			bool my_tool_active;
