@@ -151,7 +151,18 @@ int main(int argc, char* argv[])
 						//get relative mouse motion, i.e mouse delta x,y from last frame
 						float x = event.motion.xrel;
                         float y = event.motion.yrel;
+						float hypotenuse = sqrt( (pow(x,2) + pow(y,2)) );
+						float cos = x/hypotenuse;
+						float sin = y/hypotenuse;
+						matrix44 rotation = matrix44(
+														cos,-sin,0,0,
+														sin, cos, 0,0,
+														0,0,1,0,
+														0,0,0,1
+						);
 
+						cam.camToWorld.multiply(cam.camToWorld, rotation, cam.camToWorld);
+						cam.worldToCamera = cam.camToWorld.inverse();
                     }
 
                     if (event.type == SDL_QUIT)
