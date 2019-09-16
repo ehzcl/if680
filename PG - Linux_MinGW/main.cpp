@@ -83,8 +83,42 @@ int main(int argc, char* argv[])
                 while (SDL_PollEvent(&event)) {
 
 					if( event.type == SDL_KEYDOWN){
-						if( event.key.keysym.sym == SDLK_a )
-							printf("Just pressed keyboard key A!\n");
+						if( event.key.keysym.sym == SDLK_d ) {
+							cam._from.e[0] -= 0.01;
+							cam._at.e[0] -=0.01;
+							cam.camToWorld.x[3][0] -=0.01;
+							cam.worldToCamera = cam.camToWorld.inverse();
+						}
+						else if( event.key.keysym.sym == SDLK_a ){
+							cam._from.e[0] += 0.01;
+							cam._at.e[0] +=0.01;
+							cam.camToWorld.x[3][0] +=0.01;
+							cam.worldToCamera = cam.camToWorld.inverse();
+						}
+						if( event.key.keysym.sym == SDLK_s ){
+							cam._from.e[2] += 0.01;
+							cam._at.e[2] +=  0.01;
+							cam.camToWorld.x[3][2] +=0.01;
+							cam.worldToCamera = cam.camToWorld.inverse();
+						}							
+						else if( event.key.keysym.sym == SDLK_w ) {
+							cam._from.e[2] -=  0.01;
+							cam._at.e[2] -=  0.01;
+							cam.camToWorld.x[3][2] -=0.01;
+							cam.worldToCamera = cam.camToWorld.inverse();
+						}
+						if( event.key.keysym.sym == SDLK_q ){
+							cam._from.e[1] += 0.01;
+							cam._at.e[1] +=  0.01;
+							cam.camToWorld.x[3][1] +=0.01;
+							cam.worldToCamera = cam.camToWorld.inverse();
+						}							
+						else if( event.key.keysym.sym == SDLK_e ) {
+							cam._from.e[1] -=  0.01;
+							cam._at.e[1] -=  0.01;
+							cam.camToWorld.x[3][1] -=0.01;
+							cam.worldToCamera = cam.camToWorld.inverse();
+						}
 					}
 
 					// mouse pressed event
