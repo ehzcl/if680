@@ -66,6 +66,10 @@ public:
     bool compute_pixel_coordinates(const vec3 &pWorld, vec2 &pRaster)
     {
         vec3 screen, projPerspectiva, pJanela;
+        
+        if(pWorld.z() >= _from.z() ){   // pois o Z é negativo
+            return false;
+        }
 
         worldToCamera.mult_point_matrix(pWorld,screen);
 
