@@ -104,6 +104,36 @@ public:
         return false; // o ponto não pode ser visto
     }
 
+    int GetOutcode(vec2 &point, float x_min, float x_max, float y_min, float y_max) {
+        int outcode = 0;
+        if(point.y() > y_max) {
+            outcode += 8;
+        }
+        if(point.y() < y_min) {
+            outcode += 4;
+        }
+        if(point.x() > x_max) {
+            outcode += 2;
+        }
+        if(point.x() < x_min) {
+            outcode += 1;
+        }
+        return outcode;
+    }
+
+    // nova função para desenhar na tela
+    void DrawLine(SDL_Renderer *renderer, vec2 &p0, vec2 &p1) {
+        vec2 tmp = p0 - p1;
+        int tmp_size = tmp.length();
+        tmp.make_unit_vector();
+        vec2 start = p1;
+
+        for(int i = 0 ; i <= tmp_size; i++) {
+            SDL_RenderDrawPoint(renderer, start.x(),start.y());
+            start += tmp;
+        }
+    }
+
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
     {
 
@@ -126,12 +156,18 @@ public:
                 v2 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[1].pos, praster2);
                 v3 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[2].pos, praster3);
 
+                // if (v1 && v2)
+                //     SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster2.x(), praster2.y());
+                // if (v1 && v3)
+                //     SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster3.x(), praster3.y());
+                // if (v2 && v3)
+                //     SDL_RenderDrawLine(renderer, praster2.x(), praster2.y(), praster3.x(), praster3.y());
                 if (v1 && v2)
-                    SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster2.x(), praster2.y());
+                    DrawLine(renderer, praster1, praster2);
                 if (v1 && v3)
-                    SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster3.x(), praster3.y());
+                    DrawLine(renderer, praster1, praster3);
                 if (v2 && v3)
-                    SDL_RenderDrawLine(renderer, praster2.x(), praster2.y(), praster3.x(), praster3.y());
+                    DrawLine(renderer, praster2, praster3);
             }
         }
     }
