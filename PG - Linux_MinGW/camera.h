@@ -170,7 +170,6 @@ public:
         }
         return accept;
     }
-
     int GetOutCode (vec2 &p0) {
         int outcode = 0;
 
@@ -187,6 +186,76 @@ public:
 
         return outcode;
     }
+    void calculate_intersection(vec2 &p0, vec2 &p1, vec2 &dst, float xm, float ym) {
+        float slope;
+
+        slope = (p1.y() - p0.y())/(p1.x() - p0.x());
+
+        dst.e[0] = p0.x() + (1.0/slope)*(ym - p0.y());
+        dst.e[1] = p0.y() + slope * (xm - p0.x());
+    }
+
+    bool ClipLine(vec2 &p0, vec2 &p1) {
+        bool seen = false;
+        int ocp0 = GetOutcode(p0, left, imgWidth, bottom, imgHeight);
+        int ocp1 = GetOutcode(p0, left, imgWidth, bottom, imgHeight);
+        int OutsideSection;
+        vec2 dst;
+
+        while(true) {
+            if(ocp0 | ocp1 == 0) {
+                seen = true;
+                break;
+            }
+            else {
+                if(ocp0 & ocp1 != 0){
+                    seen = false;
+                    break;
+                }
+                else {
+                    OutsideSection = (ocp1 != 0)? ocp1 : ocp0;
+
+                    if(OutsideSection & 8) { // TOP
+                        calculate_intersection(p0, p1, dst, left,imgHeight);
+                    }
+                    if(OutsideSection & 4) { // BOTTOM
+                        calculate_intersection(p0, p1, dst, left,bottom);
+                    }
+                    if(OutsideSection & 2) { // RIGHT
+                        calculate_intersection(p0, p1, dst, imgWidth,imgHeight);
+                    }
+                    if(OutsideSection & 1) { // LEFT
+                        calculate_intersection(p0, p1, dst, left,imgHeight);
+                    }
+                    if(OutsideSection == ocp0) {
+                        p0.e[0] = dst.e[0];
+                        p0.e[1] = dst.e[1];
+                        ocp0 = GetOutcode(p0, left, imgWidth, bottom, imgHeight);
+                    } else {
+                        p1.e[0] = dst.e[0];
+                        p1.e[1] = dst.e[1];
+                        ocp1 = GetOutcode(p0, left, imgWidth, bottom, imgHeight);
+                    }
+                }
+            }
+        }
+        return seen;
+    }
+
+    // nova função para desenhar na tela
+    void DrawLine(SDL_Renderer *renderer, vec2 &p0, vec2 &p1) {
+        vec2 tmp = p0 - p1;
+        int tmp_size = tmp.length();
+        tmp.make_unit_vector();
+        vec2 start = p1;
+
+        if(ClipLine(p0, p1)) {
+            for(int i = 0 ; i <= tmp_size; i++) {
+                SDL_RenderDrawPoint(renderer, start.x(),start.y());
+                start += tmp;
+            }
+        }
+
 
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
     {
