@@ -57,7 +57,7 @@ public:
         axisX.make_unit_vector();
 
         float i = 1;
-        
+
         camToWorld = matrix44(
             axisX.x(), axisX.y(), axisX.z(), 0,
             axisY.x(), axisY.y(), axisY.z(), 0,
@@ -71,7 +71,7 @@ public:
     bool compute_pixel_coordinates(const vec3 &pWorld, vec2 &pRaster)
     {
         vec3 screen, projPerspectiva, pJanela;
-        
+
         if(pWorld.z() >= _from.z() ){   // pois o Z é negativo
             return false;
         }
@@ -89,7 +89,7 @@ public:
             -(right+left)/(right-left), -(bottom+top)/(bottom-top),(_far+_near)/(_far-_near),1,
             0,0,-(2*_near)/(_far-_near),0
         );
-        
+
         applicationWindowMatrix.mult_point_matrix(projPerspectiva,pJanela); // normalizando o ponto para mapear para janela da aplicação
 
         float aspect_ratio = (float)imgWidth/(float)imgHeight;
@@ -102,7 +102,7 @@ public:
                         (1+pJanela.x())/2*imgWidth,
                         (1-pJanela.y())/2*imgHeight
         );
-        
+
         if(pJanela.x() >= left && pJanela.x() <= right && pJanela.y() >= bottom && pJanela.y() <= top){
             return true;    // o ponto pode ser visto
         }
@@ -118,9 +118,9 @@ public:
         if(ClipLine(p0,p1)){
             for(int i = 0 ; i < iterations; i++) {
                 SDL_RenderDrawPoint(renderer, start.e[0], start.e[1]);
-                start += director; 
+                start += director;
             }
-        } 
+        }
     }
 
     bool ClipLine(vec2 &p0, vec2 &p1) {
@@ -210,6 +210,12 @@ public:
                 v2 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[1].pos, praster2);
                 v3 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[2].pos, praster3);
 
+                // if (v1 && v2)
+                //     SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster2.x(), praster2.y());
+                // if (v1 && v3)
+                //     SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster3.x(), praster3.y());
+                // if (v2 && v3)
+                //     SDL_RenderDrawLine(renderer, praster2.x(), praster2.y(), praster3.x(), praster3.y());
                 if (v1 && v2)
                     DrawLine(renderer, praster1, praster2);
                 if (v1 && v3)
