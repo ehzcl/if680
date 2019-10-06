@@ -104,6 +104,17 @@ public:
         return false; // o ponto não pode ser visto
     }
 
+    bool intersecao(vec3 N, vec3 RayDirection)
+    {
+        double EPSILON = 0.00001;
+        double i = dot(N, RayDirection);
+
+        if (i >= EPSILON)
+            return true; // houve intersecao
+        else
+            return false; // nao houve intersecao
+    }
+
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
     {
 
@@ -122,10 +133,35 @@ public:
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
                 bool v1, v2, v3;
+
+                // obtendo pontos do triangulo
+                vec3 v0 = obj.mesh.tris[i].vertex[0].pos;
+                vec3 v1 = obj.mesh.tris[i].vertex[1].pos;
+                vec3 v2 = obj.mesh.tris[i].vertex[0].pos;
+
+                // vetores que representam o plano formado pelo triangulo
+                vec3 ab = v1 - v0;
+                vec3 ac = v2 - v0;
+                vec3 bc = v2 - v1;
+
+                // obtendo o vetor normal ao plano formado pelo triangulo
+                vec3 normal_plano = cross(ab,ac);
+                vec3 ray;
+
+                // checando se ha intersecao
+                bool perpendiculares = intersecao(normal_plano, ray);
+
+                if (perpendiculares) {
+                    vec3 ponto_D = (normal_plano.x()*v0.x() + normal_plano.y()*v0.y() + normal_plano.z()*v0.z());
+                    // vao ser passados n e rayDirection, rayOrigin provavelmente é a posição da câmera
+                    double d_origin_point = -(dot(n,rayOrigin) - ponto_D)/dot(n,rayDirection);
+                } else {
+                    
+                }
+    
                 v1 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[0].pos, praster1);
                 v2 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[1].pos, praster2);
                 v3 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[2].pos, praster3);
-
                 if (v1 && v2)
                     SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster2.x(), praster2.y());
                 if (v1 && v3)

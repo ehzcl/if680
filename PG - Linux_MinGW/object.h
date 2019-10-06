@@ -28,9 +28,9 @@ struct Triangle {
 
 	Triangle( const std::vector<vec3> v )
 	{
-		vertex[0].pos = v[0];
-		vertex[1].pos = v[1];
-		vertex[2].pos = v[2];
+		vertex[0].pos = v[0]; // A
+		vertex[1].pos = v[1]; // B
+		vertex[2].pos = v[2]; // C
 	}
 
 	~Triangle(){}
