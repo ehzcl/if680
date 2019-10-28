@@ -16,6 +16,8 @@ Normalização | vetor1.make_unit_vector(vetor2) |
 
 * Não confunda ponto com vetor.
 
+* Não confunda produto vetorial com produto interno.
+
 ## Arquivos Importantes 
 Camera.h
 main.cpp
