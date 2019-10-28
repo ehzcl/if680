@@ -14,7 +14,7 @@ Normalização | vetor1.make_unit_vector(vetor2) |
 
 * Sempre se pergunte conscientemente se esse vetor é / não é ou não deve / deve ser normalizado.
 
-*Não confunda ponto com vetor.
+* Não confunda ponto com vetor.
 
 ## Arquivos Importantes 
 Camera.h
