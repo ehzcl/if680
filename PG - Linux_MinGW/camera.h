@@ -14,6 +14,11 @@
 
 const int WIDTH = 600;
 const int HEIGHT = 400;
+const int INSIDE = 0;   // 0000
+const int LEFT = 1;     // 0001
+const int RIGHT = 2;    // 0010
+const int BOTTOM = 4;   // 0100
+const int TOP = 8;      // 1000
 
 class camera
 {
@@ -104,6 +109,85 @@ public:
         return false; // o ponto não pode ser visto
     }
 
+    void DrawLine(SDL_Renderer* renderer, vec2 &p0, vec2 &p1) {
+        vec2 director = p1 - p0;
+        vec2 start = p0;
+        int iterations =(int)director.length();
+        director.make_unit_vector();
+
+        if(ClipLine(p0,p1)){
+            for(int i = 0 ; i < iterations; i++) {
+                SDL_RenderDrawPoint(renderer, start.e[0], start.e[1]);
+                start += director; 
+            }
+        } 
+    }
+
+    bool ClipLine(vec2 &p0, vec2 &p1) {
+
+        int outp0 = GetOutCode(p0);
+        int outp1 = GetOutCode(p1);
+        int slope = 0;
+        int tmp_x, tmp_y = 0;
+
+        bool accept = false;
+        int outcodeOutside = 0;
+
+        while(true) {
+            if(outp0 | outp1 == 0) {
+                accept = true;
+                break;
+            }
+            else if(outp0 & outp1) {
+                break;
+            }else {
+                outcodeOutside = outp1 != 0? outp1: outp0;
+
+                if(outcodeOutside & TOP) {
+                    tmp_x = p0.e[0] + (p1.e[0] - p0.e[0]) * (HEIGHT - p0.e[1]) / (p1.e[1] - p0.e[1]);
+                    tmp_y = HEIGHT;
+                } else if(outcodeOutside & BOTTOM) {
+                    tmp_x = p0.e[0] + (p1.e[0] - p0.e[0]) * (0 - p0.e[1]) / (p1.e[1] - p0.e[1]);
+                    tmp_y = 0;
+                } if(outcodeOutside & RIGHT) {
+                    tmp_y = p0.e[1] + (p1.e[1] - p0.e[1]) * (WIDTH - p0.e[0]) / (p1.e[0] - p0.e[0]);
+                    tmp_x = WIDTH;
+                } else if(outcodeOutside & LEFT) {
+                    tmp_y = p0.e[1] + (p1.e[1] - p0.e[1]) * (0 - p0.e[0]) / (p1.e[0] - p0.e[0]);
+                    tmp_x = 0;
+                }
+
+                if(outcodeOutside == outp0) {
+                    p0.e[0] = tmp_x;
+                    p0.e[1] = tmp_y;
+                    outp0 = GetOutCode(p0);
+                } else {
+                    p1.e[0] = tmp_x;
+                    p1.e[1] = tmp_y;
+                    outp1 = GetOutCode(p1);
+                }
+            }
+        }
+        return accept;
+    }
+
+    int GetOutCode (vec2 &p0) {
+        int outcode = 0;
+
+        if(p0.e[1] > HEIGHT) {
+            outcode |= TOP;
+        } else if(p0.e[1] < 0) {
+            outcode |= BOTTOM;
+        }
+        if(p0.e[0] > WIDTH) {
+            outcode |= RIGHT;
+        } else if(p0.e[0] < 0) {
+            outcode |= LEFT;
+        }
+
+        return outcode;
+    }
+
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
     {
 
@@ -127,11 +211,11 @@ public:
                 v3 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[2].pos, praster3);
 
                 if (v1 && v2)
-                    SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster2.x(), praster2.y());
+                    DrawLine(renderer, praster1, praster2);
                 if (v1 && v3)
-                    SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster3.x(), praster3.y());
+                    DrawLine(renderer, praster1, praster3);
                 if (v2 && v3)
-                    SDL_RenderDrawLine(renderer, praster2.x(), praster2.y(), praster3.x(), praster3.y());
+                    DrawLine(renderer, praster2, praster3);
             }
         }
     }
