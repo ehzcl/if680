@@ -1,7 +1,7 @@
 
 #include <string>
 #include <math.h>
-#include "camera.h" 
+#include "camera.h"
 
 #include "ImGUI/imgui_sdl.h"
 #include "ImGUI/imgui.h"
@@ -10,14 +10,14 @@
 int main(int argc, char* argv[])
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) == 0) {
-
+    float speed = 0.1; // default = 0.01
 		SDL_Window* window = SDL_CreateWindow("Projeto PG - Grupo X", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI);
 		SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
         if ( window && renderer ) {
             SDL_bool done = SDL_FALSE;
 			SDL_SetRelativeMouseMode(SDL_FALSE);
-            
+
 			std::vector<Obj> objects;
             objects.push_back( Obj("./objects/monkey_smooth.obj") );
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 				io.MouseDown[1] = buttons & SDL_BUTTON(SDL_BUTTON_RIGHT);
 
 				ImGui::NewFrame();
-			
+
 				// Create a window called "My First Tool", with a menu bar.
 				ImGui::Begin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
 				if (ImGui::BeginMenuBar())
@@ -84,39 +84,39 @@ int main(int argc, char* argv[])
 
 					if( event.type == SDL_KEYDOWN){
 						if( event.key.keysym.sym == SDLK_d ) {
-							cam._from.e[0] -= 0.01;
-							cam._at.e[0] -=0.01;
-							cam.camToWorld.x[3][0] -=0.01;
+							cam._from.e[0] -= speed;
+							cam._at.e[0] -=speed;
+							cam.camToWorld.x[3][0] -=speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
 						else if( event.key.keysym.sym == SDLK_a ){
-							cam._from.e[0] += 0.01;
-							cam._at.e[0] +=0.01;
-							cam.camToWorld.x[3][0] +=0.01;
+							cam._from.e[0] += speed;
+							cam._at.e[0] +=speed;
+							cam.camToWorld.x[3][0] +=speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
 						if( event.key.keysym.sym == SDLK_s ){
-							cam._from.e[2] += 0.01;
-							cam._at.e[2] +=  0.01;
-							cam.camToWorld.x[3][2] +=0.01;
+							cam._from.e[2] += speed;
+							cam._at.e[2] +=  speed;
+							cam.camToWorld.x[3][2] +=speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
-						}							
+						}
 						else if( event.key.keysym.sym == SDLK_w ) {
-							cam._from.e[2] -=  0.01;
-							cam._at.e[2] -=  0.01;
-							cam.camToWorld.x[3][2] -=0.01;
+							cam._from.e[2] -=  speed;
+							cam._at.e[2] -=  speed;
+							cam.camToWorld.x[3][2] -=speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
 						if( event.key.keysym.sym == SDLK_q ){
-							cam._from.e[1] += 0.01;
-							cam._at.e[1] +=  0.01;
-							cam.camToWorld.x[3][1] +=0.01;
+							cam._from.e[1] += speed;
+							cam._at.e[1] +=  speed;
+							cam.camToWorld.x[3][1] +=speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
-						}							
+						}
 						else if( event.key.keysym.sym == SDLK_e ) {
-							cam._from.e[1] -=  0.01;
-							cam._at.e[1] -=  0.01;
-							cam.camToWorld.x[3][1] -=0.01;
+							cam._from.e[1] -=  speed;
+							cam._at.e[1] -=  speed;
+							cam.camToWorld.x[3][1] -=speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
 					}
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
                     {
                         //If the left mouse button was pressed
                         if( event.button.button == SDL_BUTTON_RIGHT )
-                        { 
+                        {
                         }
 						if( event.button.button == SDL_BUTTON_LEFT)
 						{
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
                     {
                         //If the left mouse button was released
                         if( event.button.button == SDL_BUTTON_LEFT )
-                        { 
+                        {
 							SDL_SetRelativeMouseMode(SDL_FALSE);
                         }
                     }
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 
                     if (event.type == SDL_QUIT)
                         done = SDL_TRUE;
-					
+
                 }
             }
         }
