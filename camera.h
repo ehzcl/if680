@@ -12,6 +12,8 @@
 #include <SDL2/SDL.h>
 #endif
 
+#define INF (unsigned)!((int)0)
+
 const int WIDTH = 600;
 const int HEIGHT = 400;
 const int INSIDE = 0; // 0000
@@ -21,7 +23,7 @@ const int BOTTOM = 4; // 0100
 const int TOP = 8;    // 1000
 
 float frameBuffer[WIDTH][HEIGHT];
-float zBuffer[WIDTH][HEIGHT];
+float zBuffer[WIDTH * HEIGHT];
 
 class camera
 {
@@ -228,11 +230,13 @@ public:
 
     vec3 phong(vec3 normal, vec3 Kd, vec3 Ks, float n, Obj obj, vec2 textura)
     {
-        vec3 dir(0.0f, 0.0f, -1.0f);
+        /* ALTERANDO ESSE VALOR dir CONSEGUI ALGUMAS COISAS DIFERENTES,
+           A LUZ FINALMENTE COMEÇOU A APARECER MAS AINDA TÁ BUGADO */
+        vec3 dir(2.0f, 4.0f, -1.0f);
         vec3 componente_ambiente(40, 40, 40);
         float L = -dot(unit_vector(normal), dir);
         float cos = std::max(0.0f, L);
-        vec3 componenteDifusa = cos * Kd;
+        vec3 componente_difusa = cos * Kd;
         vec3 R = dir - 2 * (dot(normal, dir)) * dir;
         vec3 componente_especular = Ks * (pow(std::max(dot(axisZ, R), 0.0f), n));
         float aux = 1.0f - textura.y();
@@ -240,7 +244,7 @@ public:
         int y = obj.texture_height * aux;
         vec3 cor = obj.texture_buffer[y * obj.texture_width + x];
 
-        return componenteDifusa + componente_ambiente + componente_especular;
+        return componente_difusa + componente_ambiente + componente_especular;
     }
 
     float edge(const vec2 &v0, const vec2 &v1, const vec2 &p)
@@ -248,7 +252,12 @@ public:
         return ((p.e[0] - v0.e[0]) * (v1.e[1] - v0.e[1]) - (v1.e[0] - v0.e[0]) * (p.e[1] - v0.e[1]));
     }
 
-    void fill_triangle(SDL_Renderer *renderer, const vec2 &v0, const vec2 &v1, const vec2 &v2, vec3 &z, Vertex vtx)
+    int value_at(int x, int y)
+    {
+        return y * WIDTH + x;
+    }
+
+    void fill_triangle(SDL_Renderer *renderer, const vec2 &v0, const vec2 &v1, const vec2 &v2, vec3 &z, Triangle tr, Obj objeto)
     {
         vec2 min, max, temp;
         int min_Y, min_X, max_Y, max_X;
@@ -264,7 +273,7 @@ public:
         {
             for (int i = min_X; i <= max_X; i++)
             {
-                temp = vec2(o, i);
+                temp = vec2(i, o);
 
                 wa = edge(v0, v1, temp);
                 wb = edge(v1, v2, temp);
@@ -272,7 +281,7 @@ public:
 
                 vec3 Kd(30, 30, 30);
                 vec3 Ks(50, 50, 50);
-                float n = 4.0f;
+                float n = 4;
 
                 if (wa >= 0 && wb >= 0 && wc >= 0)
                 {
@@ -283,13 +292,13 @@ public:
                     float actual_z = (wb * (1.0 / z[0]) + wc * (1.0 / z[1]) + wa * (1.0 / z[2]));
                     actual_z = 1.0 / actual_z;
 
-                    if (actual_z < zBuffer[i][o])
+                    if (actual_z < zBuffer[value_at(i, o)])
                     {
-                        zBuffer[i][o] = actual_z;
-                        vec3 color(210, 210, 210);
-                        vec2 actual_texture = wb * vtx.text + wc * vtx.text + wa * vtx.text;
-                        vec3 actual_normal = wb * vtx.nor + wc * vtx.nor + wa * vtx.nor;
-                        SDL_SetRenderDrawColor(renderer, color.r(), color.g(), color.b(), 255);
+                        zBuffer[value_at(i, o)] = actual_z;
+                        vec3 normal = wb * tr.vertex[0].nor + wc * tr.vertex[1].nor + wa * tr.vertex[2].nor;
+                        vec2 textura = wb * tr.vertex[0].text + wc * tr.vertex[1].text + wa * tr.vertex[2].text;
+                        vec3 color = phong(normal, Kd, Ks, n, objeto, textura);
+                        SDL_SetRenderDrawColor(renderer, std::min(color.r(), 255.0f), std::min(color.g(), 255.0f), std::min(color.b(), 255.0f), 255);
                         SDL_RenderDrawPoint(renderer, i, o);
                     }
                 }
@@ -304,16 +313,9 @@ public:
 
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
     {
-
         vec3 light(0.0f, 0.0f, -1.0f);
         light.make_unit_vector();
-        for (int i = 0; i < imgWidth; i++)
-        {
-            for (int o = 0; i < imgHeight; o++)
-            {
-                zBuffer[i][o] = INFINITY;
-            }
-        }
+        std::fill(std::begin(zBuffer), std::begin(zBuffer) + 240000, 5000);
         for (auto obj : objs)
         {
             for (int i = 0; i < obj.mesh.tris.size(); i++)
@@ -332,14 +334,8 @@ public:
                 v2 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[1].pos, praster2, z.e[1]);
                 v3 = compute_pixel_coordinates(obj.mesh.tris[i].vertex[2].pos, praster3, z.e[2]);
 
-                if (v1 && v2)
-                    SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster2.x(), praster2.y());
-                if (v1 && v3)
-                    SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster3.x(), praster3.y());
-                if (v2 && v3)
-                    SDL_RenderDrawLine(renderer, praster2.x(), praster2.y(), praster3.x(), praster3.y());
-                if (insideScreen(praster1) && insideScreen(praster2) && insideScreen(praster3))
-                    fill_triangle(renderer, praster1, praster2, praster3, z);
+                if (praster1.x() >= 0 & praster1.x() <= WIDTH & praster1.y() >= 0 & praster1.y() <= HEIGHT & praster2.x() >= 0 & praster2.x() <= WIDTH & praster2.y() >= 0 & praster2.y() <= HEIGHT & praster3.x() >= 0 & praster3.x() <= WIDTH & praster3.y() >= 0 & praster3.y() < HEIGHT)
+                    fill_triangle(renderer, praster1, praster2, praster3, z, obj.mesh.tris[i], obj);
             }
         }
     }

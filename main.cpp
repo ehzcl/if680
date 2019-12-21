@@ -6,33 +6,35 @@
 #include "ImGUI/imgui_sdl.h"
 #include "ImGUI/imgui.h"
 
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-    if (SDL_Init(SDL_INIT_EVERYTHING) == 0) {
-    float speed = 0.1; // default = 0.01
-		SDL_Window* window = SDL_CreateWindow("Projeto PG - Grupo X", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI);
-		SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	if (SDL_Init(SDL_INIT_EVERYTHING) == 0)
+	{
+		float speed = 0.1; // default = 0.01
+		SDL_Window *window = SDL_CreateWindow("Projeto PG - Grupo X", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI);
+		SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-        if ( window && renderer ) {
-            SDL_bool done = SDL_FALSE;
+		if (window && renderer)
+		{
+			SDL_bool done = SDL_FALSE;
 			SDL_SetRelativeMouseMode(SDL_FALSE);
 
 			std::vector<Obj> objects;
-            objects.push_back( Obj("./objects/monkey_smooth.obj") );
+			objects.push_back(Obj("./objects/monkey_smooth.obj"));
 
 			ImGui::CreateContext();
 			ImGuiSDL::Initialize(renderer, WIDTH, HEIGHT);
 
-            camera cam(vec3(0, 0, 5), vec3(0, 0, -1), vec3(0, 1, 0), 90.0f, 1.f, 50.0f, WIDTH, HEIGHT);
+			camera cam(vec3(0, 0, 5), vec3(0, 0, -1), vec3(0, 1, 0), 90.0f, 1.f, 50.0f, WIDTH, HEIGHT);
 
 			float my_color[4];
 			bool my_tool_active;
 
-            while (!done) {
-                SDL_Event event;
-				ImGuiIO& io = ImGui::GetIO();
-                std::clock_t then = std::clock();
+			while (!done)
+			{
+				SDL_Event event;
+				ImGuiIO &io = ImGui::GetIO();
+				std::clock_t then = std::clock();
 
 				int mouseX, mouseY;
 				const int buttons = SDL_GetMouseState(&mouseX, &mouseY);
@@ -50,9 +52,16 @@ int main(int argc, char* argv[])
 				{
 					if (ImGui::BeginMenu("File"))
 					{
-						if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */ }
-						if (ImGui::MenuItem("Save", "Ctrl+S"))   { /* Do stuff */ }
-						if (ImGui::MenuItem("Close", "Ctrl+W"))  { my_tool_active = false; }
+						if (ImGui::MenuItem("Open..", "Ctrl+O"))
+						{ /* Do stuff */
+						}
+						if (ImGui::MenuItem("Save", "Ctrl+S"))
+						{ /* Do stuff */
+						}
+						if (ImGui::MenuItem("Close", "Ctrl+W"))
+						{
+							my_tool_active = false;
+						}
 						ImGui::EndMenu();
 					}
 					ImGui::EndMenuBar();
@@ -61,11 +70,11 @@ int main(int argc, char* argv[])
 				// Edit a color (stored as ~4 floats)
 				ImGui::ColorEdit4("Color", my_color);
 				// Plot some values
-				const float my_values[] = { 0.2f, 0.1f, 1.0f, 0.5f, 0.9f, 2.2f };
+				const float my_values[] = {0.2f, 0.1f, 1.0f, 0.5f, 0.9f, 2.2f};
 				ImGui::PlotLines("Frame Times", my_values, IM_ARRAYSIZE(my_values));
 
 				// Display contents in a scrolling region
-				ImGui::TextColored(ImVec4(1,1,0,1), "Important Stuff");
+				ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");
 				ImGui::BeginChild("Scrolling");
 				ImGui::Text("Random Message\n");
 				ImGui::EndChild();
@@ -74,100 +83,108 @@ int main(int argc, char* argv[])
 				SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 				SDL_RenderClear(renderer); // clear previous frame generated image
 
-                cam.render_scene(objects, renderer); // feed triangle data onto renderer
+				cam.render_scene(objects, renderer); // feed triangle data onto renderer
 
 				ImGui::Render();
 				ImGuiSDL::Render(ImGui::GetDrawData());
-                SDL_RenderPresent(renderer); // present the generated triangle data onto screen
+				SDL_RenderPresent(renderer); // present the generated triangle data onto screen
 
-                while (SDL_PollEvent(&event)) {
+				while (SDL_PollEvent(&event))
+				{
 
-					if( event.type == SDL_KEYDOWN){
-						if( event.key.keysym.sym == SDLK_d ) {
+					if (event.type == SDL_KEYDOWN)
+					{
+						if (event.key.keysym.sym == SDLK_d)
+						{
 							cam._from.e[0] -= speed;
-							cam._at.e[0] -=speed;
-							cam.camToWorld.x[3][0] -=speed;
+							cam._at.e[0] -= speed;
+							cam.camToWorld.x[3][0] -= speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
-						else if( event.key.keysym.sym == SDLK_a ){
+						else if (event.key.keysym.sym == SDLK_a)
+						{
 							cam._from.e[0] += speed;
-							cam._at.e[0] +=speed;
-							cam.camToWorld.x[3][0] +=speed;
+							cam._at.e[0] += speed;
+							cam.camToWorld.x[3][0] += speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
-						if( event.key.keysym.sym == SDLK_s ){
+						if (event.key.keysym.sym == SDLK_s)
+						{
 							cam._from.e[2] += speed;
-							cam._at.e[2] +=  speed;
-							cam.camToWorld.x[3][2] +=speed;
+							cam._at.e[2] += speed;
+							cam.camToWorld.x[3][2] += speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
-						else if( event.key.keysym.sym == SDLK_w ) {
-							cam._from.e[2] -=  speed;
-							cam._at.e[2] -=  speed;
-							cam.camToWorld.x[3][2] -=speed;
+						else if (event.key.keysym.sym == SDLK_w)
+						{
+							cam._from.e[2] -= speed;
+							cam._at.e[2] -= speed;
+							cam.camToWorld.x[3][2] -= speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
-						if( event.key.keysym.sym == SDLK_q ){
+						if (event.key.keysym.sym == SDLK_q)
+						{
 							cam._from.e[1] += speed;
-							cam._at.e[1] +=  speed;
-							cam.camToWorld.x[3][1] +=speed;
+							cam._at.e[1] += speed;
+							cam.camToWorld.x[3][1] += speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
-						else if( event.key.keysym.sym == SDLK_e ) {
-							cam._from.e[1] -=  speed;
-							cam._at.e[1] -=  speed;
-							cam.camToWorld.x[3][1] -=speed;
+						else if (event.key.keysym.sym == SDLK_e)
+						{
+							cam._from.e[1] -= speed;
+							cam._at.e[1] -= speed;
+							cam.camToWorld.x[3][1] -= speed;
 							cam.worldToCamera = cam.camToWorld.inverse();
 						}
 					}
 
 					// mouse pressed event
-                    if( event.type == SDL_MOUSEBUTTONDOWN )
-                    {
-                        //If the left mouse button was pressed
-                        if( event.button.button == SDL_BUTTON_RIGHT )
-                        {
-                        }
-						if( event.button.button == SDL_BUTTON_LEFT)
+					if (event.type == SDL_MOUSEBUTTONDOWN)
+					{
+						//If the left mouse button was pressed
+						if (event.button.button == SDL_BUTTON_RIGHT)
+						{
+						}
+						if (event.button.button == SDL_BUTTON_LEFT)
 						{
 							//Relative mouse mode moves mouse to center of window
 							//every frame. Useful if you want to use mouse and not worry
 							//about it going off screen
 							SDL_SetRelativeMouseMode(SDL_TRUE);
 						}
-                    }
-                    if( event.type == SDL_MOUSEBUTTONUP )
-                    {
-                        //If the left mouse button was released
-                        if( event.button.button == SDL_BUTTON_LEFT )
-                        {
+					}
+					if (event.type == SDL_MOUSEBUTTONUP)
+					{
+						//If the left mouse button was released
+						if (event.button.button == SDL_BUTTON_LEFT)
+						{
 							SDL_SetRelativeMouseMode(SDL_FALSE);
-                        }
-                    }
+						}
+					}
 
 					// mouse move event
-                    if( event.type == SDL_MOUSEMOTION )
+					if (event.type == SDL_MOUSEMOTION)
 					{
 						//get relative mouse motion, i.e mouse delta x,y from last frame
 						float x = event.motion.xrel;
-                        float y = event.motion.yrel;
+						float y = event.motion.yrel;
+					}
 
-                    }
+					if (event.type == SDL_QUIT)
+						done = SDL_TRUE;
+				}
+			}
+		}
 
-                    if (event.type == SDL_QUIT)
-                        done = SDL_TRUE;
-
-                }
-            }
-        }
-
-        if (renderer) {
-            SDL_DestroyRenderer(renderer);
-        }
-        if (window) {
-            SDL_DestroyWindow(window);
-        }
-    }
-    SDL_Quit();
-    return 0;
+		if (renderer)
+		{
+			SDL_DestroyRenderer(renderer);
+		}
+		if (window)
+		{
+			SDL_DestroyWindow(window);
+		}
+	}
+	SDL_Quit();
+	return 0;
 }
