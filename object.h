@@ -8,6 +8,7 @@
 #include "vec3.h"
 #include "vec2.h"
 #include "matrix44.h"
+#include "lodepng.h"
 
 #define min_x 0
 #define max_x 1
@@ -18,25 +19,27 @@
 
 #define M_PI 3.141592653589793
 
-struct Vertex{
+struct Vertex
+{
 	vec3 pos;
 };
 
-struct Triangle {
+struct Triangle
+{
 
 	Vertex vertex[3];
 
-	Triangle( const std::vector<vec3> v )
+	Triangle(const std::vector<vec3> v)
 	{
 		vertex[0].pos = v[0];
 		vertex[1].pos = v[1];
 		vertex[2].pos = v[2];
 	}
 
-	~Triangle(){}
+	~Triangle() {}
 };
 
-class Mesh 
+class Mesh
 {
 public:
 	std::vector<Triangle> tris;
@@ -44,11 +47,11 @@ public:
 	Mesh() {}
 	~Mesh() {}
 
-	bool load_mesh_from_file(const char* path) 
+	bool load_mesh_from_file(const char *path)
 	{
 		tris.clear();
-		std::vector< unsigned int > vertexIndices;
-		std::vector< vec3 > temp_vertices;
+		std::vector<unsigned int> vertexIndices;
+		std::vector<vec3> temp_vertices;
 
 		std::ifstream f(path);
 		if (!f.is_open())
@@ -59,7 +62,6 @@ public:
 
 		std::cout << "file was  oppened!\n";
 
-		
 		while (!f.eof())
 		{
 			char line[256];
@@ -70,22 +72,23 @@ public:
 
 			char junk;
 
-			if ( line[0] == 'v')
+			if (line[0] == 'v')
 			{
-				if (line[1] == 't') 
+				if (line[1] == 't')
 				{
 				}
-				else if (line[1] == 'n') 
+				else if (line[1] == 'n')
 				{
 				}
-				else {
+				else
+				{
 					vec3 vertex;
 					s >> junk >> vertex[0] >> vertex[1] >> vertex[2];
 					temp_vertices.push_back(vertex);
 				}
 			}
 
-			else if ( line[0] == 'f')
+			else if (line[0] == 'f')
 			{
 				std::string vertex1, vertex2, vertex3;
 				unsigned int vertexIndex[3];
@@ -93,7 +96,7 @@ public:
 				s >> junk >> vertex1 >> vertex2 >> vertex3;
 				int fstslash = vertex1.find("/");
 				std::string fst = vertex1.substr(0, fstslash);
-				vertexIndex[0] = atoi( fst.c_str() );
+				vertexIndex[0] = atoi(fst.c_str());
 
 				fstslash = vertex2.find("/");
 				fst = vertex2.substr(0, fstslash);
@@ -109,11 +112,11 @@ public:
 			}
 		}
 
-		for (unsigned int i = 0; i < vertexIndices.size(); i+=3)
+		for (unsigned int i = 0; i < vertexIndices.size(); i += 3)
 		{
 			unsigned int v1 = vertexIndices[i];
-			unsigned int v2 = vertexIndices[i+1];
-			unsigned int v3 = vertexIndices[i+2];
+			unsigned int v2 = vertexIndices[i + 1];
+			unsigned int v3 = vertexIndices[i + 2];
 
 			std::vector<vec3> vertices;
 			vertices.push_back(temp_vertices[v1 - 1]);
@@ -129,15 +132,41 @@ public:
 	}
 };
 
-class Obj 
+class Obj
 {
 public:
 	Mesh mesh;
 
-	Obj(){}
-	Obj( const char* file_path ){
-		mesh.load_mesh_from_file(file_path); 
+	Obj() {}
+	Obj(const char *file_path)
+	{
+		mesh.load_mesh_from_file(file_path);
 	}
-	
-	~Obj(){}
+
+	~Obj() {}
+
+	std::vector<vec3> texture_buffer;
+	int texture_width, texture_height;
+
+	void decodeOneStep(const char *file_path)
+	{
+		std::vector<unsigned char> png;
+		std::vector<unsigned char> image;
+		unsigned width, height;
+		lodepng::State state;
+
+		unsigned error = lodepng::load_file(png, file_path);
+		if (!error)
+			error = lodepng::decode(image, width, height, state, png);
+
+		if (error)
+			std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+
+		texture_buffer.reserve((int)width * (int)height);
+		for (int i = 0; i < image.size(); i += 4)
+			texture_buffer.push_back(vec3(float(image[i]), float(image[i + 1]), float(image[i + 2])));
+
+		texture_width = (int)width;
+		texture_height = (int)height;
+	}
 };

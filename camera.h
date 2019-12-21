@@ -1,14 +1,11 @@
 #ifndef CAMERAH
 #define CAMERAH
-
 #include <limits.h>
-
 #include "vec3.h"
 #include "vec2.h"
 #include "matrix44.h"
 #include "object.h"
 #include "algorithm"
-
 #ifdef _WIN32 || WIN32
 #include <SDL.h>
 #elif defined(__unix__)
@@ -17,11 +14,14 @@
 
 const int WIDTH = 600;
 const int HEIGHT = 400;
-const int INSIDE = 0;   // 0000
-const int LEFT = 1;     // 0001
-const int RIGHT = 2;    // 0010
-const int BOTTOM = 4;   // 0100
-const int TOP = 8;      // 1000
+const int INSIDE = 0; // 0000
+const int LEFT = 1;   // 0001
+const int RIGHT = 2;  // 0010
+const int BOTTOM = 4; // 0100
+const int TOP = 8;    // 1000
+
+float frameBuffer[WIDTH][HEIGHT];
+float zBuffer[WIDTH][HEIGHT];
 
 class camera
 {
@@ -45,9 +45,6 @@ public:
         look_at(from, at, up);
     }
 
-    /*  DOT() = Produto interno
-        CROSS() = Produto vetorial
-        MAKE_UNIT_VECTOR() = Normalização */
     void look_at(const vec3 &from, const vec3 &at, const vec3 &up)
     {
         axisZ = from - at;
@@ -89,57 +86,65 @@ public:
             _near);
 
         matrix44 applicationWindowMatrix = matrix44(
-            (2*_near)/(right-left), 0,0,0,
-            0,(2*_near)/(bottom-top),0,0,
-            -(right+left)/(right-left), -(bottom+top)/(bottom-top),(_far+_near)/(_far-_near),1,
-            0,0,-(2*_near)/(_far-_near),0
-        );
+            (2 * _near) / (right - left), 0, 0, 0,
+            0, (2 * _near) / (bottom - top), 0, 0,
+            -(right + left) / (right - left), -(bottom + top) / (bottom - top), (_far + _near) / (_far - _near), 1,
+            0, 0, -(2 * _near) / (_far - _near), 0);
 
-        applicationWindowMatrix.mult_point_matrix(projPerspectiva,pJanela); // normalizando o ponto para mapear para janela da aplicação
+        applicationWindowMatrix.mult_point_matrix(projPerspectiva, pJanela); // normalizando o ponto para mapear para janela da aplicação
 
-        float aspect_ratio = (float)imgWidth/(float)imgHeight;
-        top = tan((fov/2)*(M_PI/180.0));
-        right = top*aspect_ratio;
+        float aspect_ratio = (float)imgWidth / (float)imgHeight;
+        top = tan((fov / 2) * (M_PI / 180.0));
+        right = top * aspect_ratio;
         left = -right;
         bottom = -top;
 
         pRaster = vec2(
-                        (1+pJanela.e[0])/2*imgWidth,
-                        (1-pJanela.e[1])/2*imgHeight);
+            (1 + pJanela.e[0]) / 2 * imgWidth,
+            (1 - pJanela.e[1]) / 2 * imgHeight);
 
-        if(pJanela.x() >= left && pJanela.x() <= right && pJanela.y() >= bottom && pJanela.y() <= top){
-            return true;    // o ponto pode ser visto
+        if (pJanela.x() >= left && pJanela.x() <= right && pJanela.y() >= bottom && pJanela.y() <= top)
+        {
+            return true; // o ponto pode ser visto
         }
         return false; // o ponto não pode ser visto
     }
 
-
-    void DrawLine(SDL_Renderer* renderer, vec2 &p0, vec2 &p1) {
+    void DrawLine(SDL_Renderer *renderer, vec2 &p0, vec2 &p1)
+    {
         vec2 director = p1 - p0;
         vec2 start = p0;
-        int iterations =(int)director.length();
+        int iterations = (int)director.length();
         director.make_unit_vector();
 
-        if(ClipLine(p0,p1)){
-            for(int i = 0 ; i < iterations; i++) {
+        if (ClipLine(p0, p1))
+        {
+            for (int i = 0; i < iterations; i++)
+            {
                 SDL_RenderDrawPoint(renderer, start.e[0], start.e[1]);
                 start += director;
             }
         }
     }
 
-
-    int GetOutCode (vec2 &p0) {
+    int GetOutCode(vec2 &p0)
+    {
         int outcode = 0;
 
-        if(p0.e[1] > HEIGHT) {
+        if (p0.e[1] > HEIGHT)
+        {
             outcode |= TOP;
-        } else if(p0.e[1] < 0) {
+        }
+        else if (p0.e[1] < 0)
+        {
             outcode |= BOTTOM;
         }
-        if(p0.e[0] > WIDTH) {
+        if (p0.e[0] > WIDTH)
+        {
             outcode |= RIGHT;
-        } else if(p0.e[0] < 0) {
+        }
+        else if (p0.e[0] < 0)
+        {
             outcode |= LEFT;
         }
 
@@ -157,7 +162,8 @@ public:
             return false; // nao houve intersecao
     }
 
-    bool ClipLine(vec2 &p0, vec2 &p1) {
+    bool ClipLine(vec2 &p0, vec2 &p1)
+    {
 
         int outp0 = GetOutCode(p0);
         int outp1 = GetOutCode(p1);
@@ -167,35 +173,50 @@ public:
         bool accept = false;
         int outcodeOutside = 0;
 
-        while(true) {
-            if(outp0 | outp1 == 0) {
+        while (true)
+        {
+            if (outp0 | outp1 == 0)
+            {
                 accept = true;
                 break;
             }
-            else if(outp0 & outp1) {
+            else if (outp0 & outp1)
+            {
                 break;
-            }else {
-                outcodeOutside = outp1 != 0? outp1: outp0;
+            }
+            else
+            {
+                outcodeOutside = outp1 != 0 ? outp1 : outp0;
 
-                if(outcodeOutside & TOP) {
+                if (outcodeOutside & TOP)
+                {
                     tmp_x = p0.e[0] + (p1.e[0] - p0.e[0]) * (HEIGHT - p0.e[1]) / (p1.e[1] - p0.e[1]);
                     tmp_y = HEIGHT;
-                } else if(outcodeOutside & BOTTOM) {
+                }
+                else if (outcodeOutside & BOTTOM)
+                {
                     tmp_x = p0.e[0] + (p1.e[0] - p0.e[0]) * (0 - p0.e[1]) / (p1.e[1] - p0.e[1]);
                     tmp_y = 0;
-                } if(outcodeOutside & RIGHT) {
+                }
+                if (outcodeOutside & RIGHT)
+                {
                     tmp_y = p0.e[1] + (p1.e[1] - p0.e[1]) * (WIDTH - p0.e[0]) / (p1.e[0] - p0.e[0]);
                     tmp_x = WIDTH;
-                } else if(outcodeOutside & LEFT) {
+                }
+                else if (outcodeOutside & LEFT)
+                {
                     tmp_y = p0.e[1] + (p1.e[1] - p0.e[1]) * (0 - p0.e[0]) / (p1.e[0] - p0.e[0]);
                     tmp_x = 0;
                 }
 
-                if(outcodeOutside == outp0) {
+                if (outcodeOutside == outp0)
+                {
                     p0.e[0] = tmp_x;
                     p0.e[1] = tmp_y;
                     outp0 = GetOutCode(p0);
-                } else {
+                }
+                else
+                {
                     p1.e[0] = tmp_x;
                     p1.e[1] = tmp_y;
                     outp1 = GetOutCode(p1);
@@ -205,74 +226,53 @@ public:
         return accept;
     }
 
-    /*void organize_triangle(const vec2 &v0, const vec2 &v1, const vec2 &v2, const vec2 *&p0, const vec2 *&p1, const vec2 *&p2)
+    vec3 phong(vec3 normal, vec3 Kd, vec3 Ks, float n, Obj obj, vec2 textura)
     {
-        p0 = &v0;
-        p1 = &v1;
-        p2 = &v2;
+        vec3 dir(0.0f, 0.0f, -1.0f);
+        vec3 componente_ambiente(40, 40, 40);
+        float L = -dot(unit_vector(normal), dir);
+        float cos = std::max(0.0f, L);
+        vec3 componenteDifusa = cos * Kd;
+        vec3 R = dir - 2 * (dot(normal, dir)) * dir;
+        vec3 componente_especular = Ks * (pow(std::max(dot(axisZ, R), 0.0f), n));
+        float aux = 1.0f - textura.y();
+        int y = obj.texture_height * aux;
+        int x = obj.texture_width * textura.x();
+        vec3 cor = obj.texture_buffer[y * obj.texture_width + x];
 
-        // obtendo o ponto com o menor X || Y
-
-        if (p1->e[0] < p0->e[0])
-            std::swap(p1, p0);
-        else
-        {
-            if (p1->e[0] == p0->e[0])
-                if (p1->e[1] < p0->e[1])
-                    std::swap(p1, p0);
-        }
-
-        if (p2->e[0] < p0->e[0])
-            std::swap(p2, p0);
-        else
-        {
-            if (p1->e[0] == p0->e[0])
-                if (p1->e[1] < p0->e[1])
-                    std::swap(p2, p0);
-        }
-
-        // obtendo o ponto com o maior Y, diferente de P0
-
-        if (p2->e[1] > p1->e[1])
-            std::swap(p1, p2);
-    }*/    
+        return componenteDifusa + componente_ambiente + componente_especular;
+    }
 
     float edge(const vec2 &v0, const vec2 &v1, const vec2 &p)
     {
         return ((p.e[0] - v0.e[0]) * (v1.e[1] - v0.e[1]) - (v1.e[0] - v0.e[0]) * (p.e[1] - v0.e[1]));
     }
 
-    void fill_triangle(SDL_Renderer *renderer, const vec2 &v0, const vec2 &v1, const vec2 &v2, vec3 &z)
+    void fill_triangle(SDL_Renderer *renderer, const vec2 &v0, const vec2 &v1, const vec2 &v2, vec3 &z, Triangle triangulo, Object obj)
     {
         vec2 min, max, temp;
-        int  min_Y, min_X, max_Y, max_X;
-        float wa,wb,wc, area;
+        int min_Y, min_X, max_Y, max_X;
+        float wa, wb, wc, area;
 
-        max_X =  (v0.e[0] > v1.e[0]) ? ( (v0.e[0] > v2.e[0]) ? v0.e[0] : v2.e[0]) : ( (v1.e[0] > v2.e[0]) ? v1.e[0] : v2.e[0]);
-        max_Y =  (v0.e[1] > v1.e[1]) ? ( (v0.e[1] > v2.e[1]) ? v0.e[1] : v2.e[1]) : ( (v1.e[1] > v2.e[1]) ? v1.e[1] : v2.e[1]);
-        min_X =  (v0.e[0] < v1.e[0]) ? ( (v0.e[0] < v2.e[0]) ? v0.e[0] : v2.e[0]) : ( (v1.e[0] < v2.e[0]) ? v1.e[0] : v2.e[0]);
-        min_Y =  (v0.e[1] < v1.e[1]) ? ( (v0.e[1] < v2.e[1]) ? v0.e[1] : v2.e[1]) : ( (v1.e[1] < v2.e[1]) ? v1.e[1] : v2.e[1]);
+        max_X = (v0.e[0] > v1.e[0]) ? ((v0.e[0] > v2.e[0]) ? v0.e[0] : v2.e[0]) : ((v1.e[0] > v2.e[0]) ? v1.e[0] : v2.e[0]);
+        max_Y = (v0.e[1] > v1.e[1]) ? ((v0.e[1] > v2.e[1]) ? v0.e[1] : v2.e[1]) : ((v1.e[1] > v2.e[1]) ? v1.e[1] : v2.e[1]);
+        min_X = (v0.e[0] < v1.e[0]) ? ((v0.e[0] < v2.e[0]) ? v0.e[0] : v2.e[0]) : ((v1.e[0] < v2.e[0]) ? v1.e[0] : v2.e[0]);
+        min_Y = (v0.e[1] < v1.e[1]) ? ((v0.e[1] < v2.e[1]) ? v0.e[1] : v2.e[1]) : ((v1.e[1] < v2.e[1]) ? v1.e[1] : v2.e[1]);
 
-        area = edge(v0,v1,v2);
-        for (int o =  min_Y; o < max_Y; o++)
+        area = edge(v0, v1, v2);
+        for (int o = min_Y; o <= max_Y; o++)
         {
-            for (int i = min_X; i <max_X; i++)
+            for (int i = min_X; i <= max_X; i++)
             {
-		            temp = vec2(i + 0.5f, o + 0.5f);
+                temp = vec2(o, i);
 
-                wa = edge(v0,v1,temp);
-		            wb = edge(v1,v2,temp);
-		            wc = edge(v2,v0,temp);
+                wa = edge(v0, v1, temp);
+                wb = edge(v1, v2, temp);
+                wc = edge(v2, v0, temp);
 
-                vec2 edge0 = edge(v1, v2, temp);
-                vec2 edge1 = edge(v2, v0, temp);
-                vec2 edge2 = edge(v0, v1, temp);
-
-                bool sobrepoe = true;
-
-                overlaps &= (w0 == 0 ? ((edge0.e[1] == 0 && edge0.x > 0) ||  edge0.e[1] > 0) : (w0 > 0));
-                overlaps &= (w1 == 0 ? ((edge1.e[1] == 0 && edge1.x > 0) ||  edge1.e[1] > 0) : (w1 > 0));
-                overlaps &= (w1 == 0 ? ((edge2.e[1] == 0 && edge2.x > 0) ||  edge2.e[1] > 0) : (w2 > 0));
+                vec3 Kd(30, 30, 30);
+                vec3 Ks(50, 50, 50);
+                float n = 4.0f;
 
                 if (wa >= 0 && wb >= 0 && wc >= 0)
                 {
@@ -280,22 +280,26 @@ public:
                     wb /= area;
                     wc /= area;
 
-                    float actual_z = (wb *(1.0/z[0]) + wc * (1.0/z[1]) + wa*(1.0/z[2]) );
-                    actual_z = 1.0/actual_z;
+                    float actual_z = (wb * (1.0 / z[0]) + wc * (1.0 / z[1]) + wa * (1.0 / z[2]));
+                    actual_z = 1.0 / actual_z;
 
-                    if(actual_z < zBuffer[i][o]) {
-                      zBuffer[i][o] = actual_z;
-                      vec3 color(210, 210, 210);
-                      SDL_SetRenderDrawColor(renderer, color.r(), color.g(), color.b(), 255);
-                      SDL_RenderDrawPoint(renderer, i, o);
+                    if (actual_z < zBuffer[i][o])
+                    {
+                        zBuffer[i][o] = actual_z;
+                        vec3 color(210, 210, 210);
+                        vec2 actual_texture = wb * triangulo.vertex[0].text + wc * triangulo.vertex[1].text + wa * triangulo.vertex[2].text;
+                        vec3 actual_normal = wb * triangulo.vertex[0].nor + wc * triangulo.vertex[1].nor + wa * triangulo.vertex[2].nor;
+                        SDL_SetRenderDrawColor(renderer, color.r(), color.g(), color.b(), 255);
+                        SDL_RenderDrawPoint(renderer, i, o);
                     }
                 }
             }
         }
     }
 
-    bool insideScreen(const vec2 &v0) {
-      return ( (v0.e[0] >= 0) && (v0.e[0] <= WIDTH) && (v0.e[1] >= 0) && (v0.e[1] <= HEIGHT) );
+    bool insideScreen(const vec2 &v0)
+    {
+        return ((v0.e[0] >= 0) && (v0.e[0] <= WIDTH) && (v0.e[1] >= 0) && (v0.e[1] <= HEIGHT));
     }
 
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
@@ -303,12 +307,12 @@ public:
 
         vec3 light(0.0f, 0.0f, -1.0f);
         light.make_unit_vector();
-        float[][] frameBuffer = new float[imgWidth][imgHeight];
-        float[][] zBuffer = new float[imgWidth][imgHeight];
-        for(int i = 0 ; i < imgWidth ; i++) {
-          for(int o = 0; i < imgHeight; o++) {
-            zBuffer[i][o] = INFINITY;
-          }
+        for (int i = 0; i < imgWidth; i++)
+        {
+            for (int o = 0; i < imgHeight; o++)
+            {
+                zBuffer[i][o] = INFINITY;
+            }
         }
         for (auto obj : objs)
         {
@@ -334,7 +338,7 @@ public:
                     SDL_RenderDrawLine(renderer, praster1.x(), praster1.y(), praster3.x(), praster3.y());
                 if (v2 && v3)
                     SDL_RenderDrawLine(renderer, praster2.x(), praster2.y(), praster3.x(), praster3.y());
-                if(insideScreen(praster1) && insideScreen(praster2) && insideScreen(praster3))
+                if (insideScreen(praster1) && insideScreen(praster2) && insideScreen(praster3))
                     fill_triangle(renderer, praster1, praster2, praster3, z);
             }
         }
