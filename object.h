@@ -22,6 +22,8 @@
 struct Vertex
 {
 	vec3 pos;
+	vec3 nor;
+	vec2 text;
 };
 
 struct Triangle
@@ -29,11 +31,19 @@ struct Triangle
 
 	Vertex vertex[3];
 
-	Triangle(const std::vector<vec3> v)
+	Triangle(const std::vector<vec3> v, const std::vector<vec3> v2, const std::vector<vec2> v3)
 	{
 		vertex[0].pos = v[0];
 		vertex[1].pos = v[1];
 		vertex[2].pos = v[2];
+
+		vertex[0].nor = v2[0];
+		vertex[1].nor = v2[1];
+		vertex[2].nor = v2[2];
+
+		vertex[0].text = v3[0];
+		vertex[1].text = v3[1];
+		vertex[2].text = v3[2];
 	}
 
 	~Triangle() {}
@@ -51,7 +61,11 @@ public:
 	{
 		tris.clear();
 		std::vector<unsigned int> vertexIndices;
+		std::vector<unsigned int> normalIndices;
+		std::vector<unsigned int> texturaIndices;
 		std::vector<vec3> temp_vertices;
+		std::vector<vec3> temp_normal;
+		std::vector<vec2> temp_textura;
 
 		std::ifstream f(path);
 		if (!f.is_open())
@@ -76,9 +90,18 @@ public:
 			{
 				if (line[1] == 't')
 				{
+					vec2 vertex;
+					char junk2;
+					s >> junk >> junk2 >> vertex[0] >> vertex[1];
+					temp_textura.push_back(vertex);
 				}
 				else if (line[1] == 'n')
 				{
+					vec3 vertex;
+					char junk2;
+					s >> junk >> junk2 >> vertex[0] >> vertex[1] >> vertex[2];
+					temp_normal.push_back(vertex);
+					// std::cout << "normal lida"<<vertex << '\n';
 				}
 				else
 				{
@@ -92,23 +115,64 @@ public:
 			{
 				std::string vertex1, vertex2, vertex3;
 				unsigned int vertexIndex[3];
+				unsigned int normalIndex[3];
+				unsigned int textureIndex[3];
 
 				s >> junk >> vertex1 >> vertex2 >> vertex3;
-				int fstslash = vertex1.find("/");
-				std::string fst = vertex1.substr(0, fstslash);
-				vertexIndex[0] = atoi(fst.c_str());
 
-				fstslash = vertex2.find("/");
-				fst = vertex2.substr(0, fstslash);
-				vertexIndex[1] = atoi(fst.c_str());
+				std::vector<int> aux1;
+				std::stringstream ss1(vertex1);
+				for (int i; ss1 >> i;)
+				{
+					aux1.push_back(i);
+					aux1.push_back(i);
+					if (ss1.peek() == '/')
+						ss1.ignore();
+				}
 
-				fstslash = vertex3.find("/");
-				fst = vertex3.substr(0, fstslash);
-				vertexIndex[2] = atoi(fst.c_str());
+				std::vector<int> aux2;
+				std::stringstream ss2(vertex2);
+				for (int i; ss2 >> i;)
+				{
+					aux2.push_back(i);
+					aux2.push_back(i);
+					if (ss2.peek() == '/')
+						ss2.ignore();
+				}
+
+				std::vector<int> aux3;
+				std::stringstream ss3(vertex3);
+				for (int i; ss3 >> i;)
+				{
+					aux3.push_back(i);
+					aux3.push_back(i);
+					if (ss3.peek() == '/')
+						ss3.ignore();
+				}
+
+				vertexIndex[0] = aux1[0];
+				textureIndex[0] = aux1[1];
+				normalIndex[0] = aux1[2];
+
+				vertexIndex[1] = aux2[0];
+				textureIndex[1] = aux2[1];
+				normalIndex[1] = aux2[2];
+
+				vertexIndex[2] = aux3[0];
+				textureIndex[2] = aux3[1];
+				normalIndex[2] = aux3[2];
 
 				vertexIndices.push_back(vertexIndex[0]);
 				vertexIndices.push_back(vertexIndex[1]);
 				vertexIndices.push_back(vertexIndex[2]);
+
+				normalIndices.push_back(normalIndex[0]);
+				normalIndices.push_back(normalIndex[1]);
+				normalIndices.push_back(normalIndex[2]);
+
+				texturaIndices.push_back(textureIndex[0]);
+				texturaIndices.push_back(textureIndex[1]);
+				texturaIndices.push_back(textureIndex[2]);
 			}
 		}
 
@@ -123,7 +187,23 @@ public:
 			vertices.push_back(temp_vertices[v2 - 1]);
 			vertices.push_back(temp_vertices[v3 - 1]);
 
-			Triangle t(vertices);
+			v1 = normalIndices[i];
+			v2 = normalIndices[i + 1];
+			v3 = normalIndices[i + 2];
+			std::vector<vec3> normais;
+			normais.push_back(temp_normal[v1 - 1]);
+			normais.push_back(temp_normal[v2 - 1]);
+			normais.push_back(temp_normal[v3 - 1]);
+			v1 = texturaIndices[i];
+			v2 = texturaIndices[i + 1];
+			v3 = texturaIndices[i + 2];
+
+			std::vector<vec2> texturas;
+			texturas.push_back(temp_textura[v1 - 1]);
+			texturas.push_back(temp_textura[v2 - 1]);
+			texturas.push_back(temp_textura[v3 - 1]);
+
+			Triangle t(vertices, normais, texturas);
 			tris.push_back(t);
 		}
 
@@ -142,7 +222,11 @@ public:
 	{
 		mesh.load_mesh_from_file(file_path);
 	}
-
+	Obj(const char *file_path, const char *texture_path)
+	{
+		mesh.load_mesh_from_file(file_path);
+		decodeOneStep(texture_path);
+	}
 	~Obj() {}
 
 	std::vector<vec3> texture_buffer;

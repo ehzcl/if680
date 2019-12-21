@@ -236,8 +236,8 @@ public:
         vec3 R = dir - 2 * (dot(normal, dir)) * dir;
         vec3 componente_especular = Ks * (pow(std::max(dot(axisZ, R), 0.0f), n));
         float aux = 1.0f - textura.y();
-        int y = obj.texture_height * aux;
         int x = obj.texture_width * textura.x();
+        int y = obj.texture_height * aux;
         vec3 cor = obj.texture_buffer[y * obj.texture_width + x];
 
         return componenteDifusa + componente_ambiente + componente_especular;
@@ -248,7 +248,7 @@ public:
         return ((p.e[0] - v0.e[0]) * (v1.e[1] - v0.e[1]) - (v1.e[0] - v0.e[0]) * (p.e[1] - v0.e[1]));
     }
 
-    void fill_triangle(SDL_Renderer *renderer, const vec2 &v0, const vec2 &v1, const vec2 &v2, vec3 &z, Triangle triangulo, Object obj)
+    void fill_triangle(SDL_Renderer *renderer, const vec2 &v0, const vec2 &v1, const vec2 &v2, vec3 &z, Vertex vtx)
     {
         vec2 min, max, temp;
         int min_Y, min_X, max_Y, max_X;
@@ -287,8 +287,8 @@ public:
                     {
                         zBuffer[i][o] = actual_z;
                         vec3 color(210, 210, 210);
-                        vec2 actual_texture = wb * triangulo.vertex[0].text + wc * triangulo.vertex[1].text + wa * triangulo.vertex[2].text;
-                        vec3 actual_normal = wb * triangulo.vertex[0].nor + wc * triangulo.vertex[1].nor + wa * triangulo.vertex[2].nor;
+                        vec2 actual_texture = wb * vtx.text + wc * vtx.text + wa * vtx.text;
+                        vec3 actual_normal = wb * vtx.nor + wc * vtx.nor + wa * vtx.nor;
                         SDL_SetRenderDrawColor(renderer, color.r(), color.g(), color.b(), 255);
                         SDL_RenderDrawPoint(renderer, i, o);
                     }
