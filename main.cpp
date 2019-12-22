@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 
 			std::vector<Obj> objects;
 			objects.push_back(Obj("./objects/monkey_smooth.obj"));
+			// objects.push_back(Obj("elf.obj", "Elf_Albedo.obj"));
 
 			ImGui::CreateContext();
 			ImGuiSDL::Initialize(renderer, WIDTH, HEIGHT);

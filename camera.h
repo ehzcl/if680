@@ -230,26 +230,30 @@ public:
 
     vec3 phong(vec3 normal, vec3 Kd, vec3 Ks, float n, Obj obj, vec2 textura)
     {
-        /* ALTERANDO ESSE VALOR dir CONSEGUI ALGUMAS COISAS DIFERENTES,
-           A LUZ FINALMENTE COMEÇOU A APARECER MAS AINDA TÁ BUGADO */
-        vec3 dir(2.0f, 4.0f, -1.0f);
-        vec3 componente_ambiente(40, 40, 40);
-        float L = -dot(unit_vector(normal), dir);
-        float cos = std::max(0.0f, L);
+        vec3 dir(0.0, 0.0f, -1.0f);
+        vec3 componente_ambiente(120, 120, 120);
+        dir.make_unit_vector();
+        float L = dot(-normal, dir);
+        float cos = L;
         vec3 componente_difusa = cos * Kd;
-        vec3 R = dir - 2 * (dot(normal, dir)) * dir;
-        vec3 componente_especular = Ks * (pow(std::max(dot(axisZ, R), 0.0f), n));
-        float aux = 1.0f - textura.y();
-        int x = obj.texture_width * textura.x();
-        int y = obj.texture_height * aux;
-        vec3 cor = obj.texture_buffer[y * obj.texture_width + x];
+        vec3 R = dir - 2 * (dot(normal, dir)) * normal;
+        vec3 componente_especular = Ks * (pow(dot(axisZ, R), n));
+        if (textura.length() != 0)
+        {
+            float aux = 1.0f - textura.y();
+            int x = obj.texture_width * textura.x();
+            int y = obj.texture_height * aux;
+            vec3 cor = obj.texture_buffer[y * obj.texture_width + x];
+        }
 
-        return componente_difusa + componente_ambiente + componente_especular;
+        return (componente_difusa + componente_ambiente + componente_especular);
     }
 
-    float edge(const vec2 &v0, const vec2 &v1, const vec2 &p)
+    float edge(vec2 p1, vec2 p2, vec2 p3)
     {
-        return ((p.e[0] - v0.e[0]) * (v1.e[1] - v0.e[1]) - (v1.e[0] - v0.e[0]) * (p.e[1] - v0.e[1]));
+        vec2 p = p2 - p1;
+        vec2 r = p3 - p1;
+        return (p.x() * r.y()) - (r.x() * p.y());
     }
 
     int value_at(int x, int y)
@@ -275,9 +279,9 @@ public:
             {
                 temp = vec2(i, o);
 
-                wa = edge(v0, v1, temp);
-                wb = edge(v1, v2, temp);
-                wc = edge(v2, v0, temp);
+                wc = edge(v0, v1, temp);
+                wa = edge(v1, v2, temp);
+                wb = edge(v2, v0, temp);
 
                 vec3 Kd(30, 30, 30);
                 vec3 Ks(50, 50, 50);
@@ -289,16 +293,18 @@ public:
                     wb /= area;
                     wc /= area;
 
-                    float actual_z = (wb * (1.0 / z[0]) + wc * (1.0 / z[1]) + wa * (1.0 / z[2]));
-                    actual_z = 1.0 / actual_z;
+                    float actual_z = (wa * (1.0 / z[0]) + wb * (1.0 / z[1]) + wc * (1.0 / z[2]));
 
                     if (actual_z < zBuffer[value_at(i, o)])
                     {
                         zBuffer[value_at(i, o)] = actual_z;
-                        vec3 normal = wb * tr.vertex[0].nor + wc * tr.vertex[1].nor + wa * tr.vertex[2].nor;
-                        vec2 textura = wb * tr.vertex[0].text + wc * tr.vertex[1].text + wa * tr.vertex[2].text;
-                        vec3 color = phong(normal, Kd, Ks, n, objeto, textura);
-                        SDL_SetRenderDrawColor(renderer, std::min(color.r(), 255.0f), std::min(color.g(), 255.0f), std::min(color.b(), 255.0f), 255);
+                        vec3 normal = wa * tr.vertex[0].nor + wb * tr.vertex[1].nor + wc * tr.vertex[2].nor;
+                        vec2 text = wa * tr.vertex[0].text + wb * tr.vertex[1].text + wc * tr.vertex[2].text;
+                        vec3 color = phong(normal, Kd, Ks, n, objeto, text);
+                        color[0] = std::min(color[0], 255.f);
+                        color[1] = std::min(color[1], 255.f);
+                        color[2] = std::min(color[2], 255.f);
+                        SDL_SetRenderDrawColor(renderer, color.x(), color.y(), color.z(), 255);
                         SDL_RenderDrawPoint(renderer, i, o);
                     }
                 }
@@ -313,8 +319,6 @@ public:
 
     void render_scene(std::vector<Obj> objs, SDL_Renderer *renderer)
     {
-        vec3 light(0.0f, 0.0f, -1.0f);
-        light.make_unit_vector();
         std::fill(std::begin(zBuffer), std::begin(zBuffer) + 240000, 5000);
         for (auto obj : objs)
         {
